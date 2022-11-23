@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国新冠疫情实时数据地图</title>
+  <style>
+    #myEcharts {
+      width: 800px;
+      height: 600px;
+      border: solid 0px;
+      margin: 0 auto;
+    }
+  </style>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/echarts.min.js"></script>
+  <script src="js/china.js"></script>
+
+</head>
+
+<body>
+  <div id="myEcharts"></div>
+  <script>
+    var myChart = echarts.init(document.getElementById('myEcharts'));
+    option = {
+      title: {
+        text: '中国新冠疫情实时数据地图',
+        subtext: '',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'item',
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        data: ['中国新冠疫情实时数据地图']
+      },
+      visualMap: {
+        type: 'piecewise',
+        pieces: [
+          { min: 5000, max: 99999999, label: '≥5000人', color: '#974236' },
+          { min: 1000, max: 4999, label: '1000-4999人', color: '#ee7263' },
+          { min: 100, max: 999, label: '100-999人', color: '#f5bba7' },
+          { min: 50, max: 99, label: '50-99人', color: '#ffd0a6' },
+          { min: 1, max: 49, label: '1-49人', color: '#ffe7b8' },
+          { min: 0, max: 0, label: '0人', color: '#e2ebf4' },
+        ],
+        color: ['#E0022B', '#E09107', '#A3E00B']
+      },
+      toolbox: {
+        show: true,
+        orient: 'vertical',
+        left: 'right',
+        top: 'center',
+        feature: {
+          mark: { show: true },
+          dataView: { show: true, readOnly: false },
+          restore: { show: true },
+          saveAsImage: { show: true }
+        }
+      },
+      roamController: {
+        show: true,
+        left: 'right',
+        mapTypeControl: {
+          'china': true
+        }
+      },
+      series: [
+        {
+          name: '现存确诊数',
+          type: 'map',
+          mapType: 'china',
+          roam: false,
+          label: {
+            show: true,
+            color: "black"
+          },
+          showLegendSymbol: false,
+          data: [//实时数据放在这里，格式如下...
+            // {
+            //   name: '北京',
+            //   value: 212
+            // }, {
+            //   name: '天津',
+            //   value: 60
+            // }, 
+          ]
+        }
+      ]
+    };
+    //调用腾讯疫情实时数据接口。因为该接口跟我们的数据格式不同，所以需要先做格式转换再显示...
+    $.ajax({
+      url: "https://api.inews.qq.com/newsqa/v1/query/inner/publish/modules/list?modules=statisGradeCityDetail,diseaseh5Shelf",
+      success: function (res) {
+        let metaData = res.data;
+        option.title.subtext = "截止至：" + metaData.diseaseh5Shelf.lastUpdateTime + '\n数据源：腾讯新闻';
+        let data = metaData.diseaseh5Shelf.areaTree[0].children.map(province => ({//接受到的数据进行数据格式转换...
+          name: province.name,
+          value: province.total.nowConfirm,
+        }))
+        option.series[0].data = data;
+        myChart.setOption(option);
+      }
+    })
+  </script>
+</body>
+
+</html>
